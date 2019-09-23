@@ -36,6 +36,9 @@ router.post('/login', (req, res, next) => {
 });
 
 router.post('/check-auth', (req, res, next) => {
+    if (!req.cookies.jwtToken) {
+        return next(new Error('jwtToken not available.'));
+    }
     return verifyJWT(req.cookies.jwtToken).then((result) => {
         return res.send(result);
     }, (err) => {
