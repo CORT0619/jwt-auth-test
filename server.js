@@ -18,11 +18,8 @@ app.use(cookieParser());
 
 /* set up the port */
 const port = process.env.PORT || 3000;
-const privateKey = 'shhhh';
-
 
 router.post('/login', (req, res, next) => {
-    // console.log(util.inspect(req));
     const body = req.body;
     
     if (body.login && body.password) {
@@ -32,8 +29,10 @@ router.post('/login', (req, res, next) => {
                 secure: false
             }).status(200).send('ok');
         });
+    } else if (!body.login || !body.password) {
+        res.status(400).send('invalid login');
     }
-    res.status(400).send('invalid login');
+    next();
 });
 
 router.post('/check-auth', (req, res, next) => {
@@ -63,7 +62,6 @@ app.listen(port, () => {
 function signJWT(login) {
     return new Promise(async (resolve, reject) => {
         const payload = {};
-        
         payload.login = login;
 
         try {
@@ -73,12 +71,13 @@ function signJWT(login) {
                 return resolve(token);
             });
         } catch (e) {
-
+            console.error(e);
         }
 
     });
 }
 
+/* read in the passed in key file */
 function readKeys(key) {
     return new Promise((resolve, reject) => {
         fs.readFile(`keys/${key}`, 'utf8', (err, data) => {
