@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const router = express.Router()
 const util = require('util');
 const https = require('https');
+const fs = require('fs');
 
 
 const app = express();
@@ -60,38 +61,48 @@ app.listen(port, () => {
 
 /* setup JWT token */
 function signJWT(login) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         const payload = {};
         
         payload.login = login;
-        // return jwt.sign(payload, privateKey, { expiresIn: '1h', algorithm: 'RS256' }, (err, token) => {
-        //     // console.log('token ', token);
-        //     // return token;
-        //     if (err) {
-        //         reject(err);
-        //     }
-        //     resolve(token);
-        // });
-        return jwt.sign(payload, privateKey, { expiresIn: '1h' }, (err, token) => {
-            // console.log('token ', token);
-            // return token;
-            if (err) {
-                reject(err);
-            }
-            resolve(token);
+
+        try {
+            const data = await readKeys('private.key');
+            return jwt.sign(payload, data, { expiresIn: '1h', algorithm: 'RS256' }, (err, token) => {
+                if (err) return reject(err);
+                return resolve(token);
+            });
+        } catch (e) {
+
+        }
+
+    });
+}
+
+function readKeys(key) {
+    return new Promise((resolve, reject) => {
+        fs.readFile(`keys/${key}`, 'utf8', (err, data) => {
+            if (err) return reject(err);
+
+            return resolve(data);
         });
     });
 }
 
 /* verify jwt token */
 function verifyJWT(token) {
-    return new Promise((resolve, reject) => {
-        jwt.verify(token, privateKey, (err, decoded) => {
-            if (err) {
-                console.log('error', err);
-                return reject(err);
-            }
-            return resolve('matched!');
-        });
+    return new Promise(async (resolve, reject) => {
+        try {
+            const data = await readKeys('public.key');
+            jwt.verify(token, data, (err, decoded) => {
+                if (err) {
+                    console.log('error', err);
+                    return reject(err);
+                }
+                return resolve('matched!');
+            });
+        } catch(e) {
+            console.error(e);
+        }
     });
 }
